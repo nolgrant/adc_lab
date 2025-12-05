@@ -51,6 +51,7 @@ signal psclk, psen, reset, PSDONE : std_logic;
 constant TbPeriod : time := 8 ns;
 signal TbClock : std_logic := '0';
 signal Unshifted_clk , ADCCLK : std_logic;
+signal inc_cnt : integer := 0;
 
 begin
 TbClock <= not TbClock after 2.5ns; -- create a 200MHz clock for kicks, this clock is arbitrary and is just for the PSCLK
@@ -59,10 +60,28 @@ psclk <= TbClock; -- this will be the board clock 125MHz
 stimuli : process
 begin
     PSEN <= '0';
-    wait for 10 us;
-    -- TODO : in here, write some code to create PSEN signals which will rotate the the ADC_CLK a full 360 degrees from 
-    -- its starting location.  Then stop rotating.
-    wait; 
+    
+    -- give MMCM some time to start outputting a clock
+    wait for 500 ns;
+    
+    -- 112 steps = 2ns
+    for i in 1 to 112 loop 
+            
+        -- set psen to pulse for one period of PSCLK
+        PSEN <= '1';
+        wait for 5 ns;
+        PSEN <= '0';
+
+        -- wait for psdone signal to be returned by MMCM
+        while PSDONE = '0' loop
+            wait for 5 ns; -- Wait period to check
+        end loop;
+        wait for 15 ns; -- Wait a few more periods before sending next pulse
+        inc_cnt <= inc_cnt+1;
+        
+    end loop;
+      
+    wait;
  end process;
 
 -- instantiate the ADC itself

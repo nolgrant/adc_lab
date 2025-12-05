@@ -1,0 +1,4 @@
+*.zip
+vivado/*
+vivado.gen/*
+log.txt
